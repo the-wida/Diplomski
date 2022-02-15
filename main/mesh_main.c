@@ -469,7 +469,7 @@ void mesh_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id
 void ip_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     ip_event_got_ip_t *ip_event = (ip_event_got_ip_t *) event_data;
-    ESP_LOGI(MESH_TAG, "<IP_EVENT_STA_GOT_IP>IP:" IPSTR, IP2STR(&ip_event->ip_info.ip));
+    ESP_LOGI(MESH_TAG, "IP: Got new address: " IPSTR, IP2STR(&ip_event->ip_info.ip));
 }
 
 static void provisioning_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
