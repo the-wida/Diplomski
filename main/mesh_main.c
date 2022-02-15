@@ -12,6 +12,7 @@
 #include <string.h>
 #include "driver/gpio.h"
 #include "mqtt_client.h"
+#include "esp_timer.h"
 
 #define RX_SIZE         5
 #define TX_SIZE         5
@@ -49,6 +50,8 @@ float humidity = 0.;
 float temperature = 0.;
 
 static bool is_mesh_connected = false;
+bool provisioning_recieved = false;
+
 static mesh_addr_t mesh_parent_addr;
 static EventGroupHandle_t is_provisioning_finished;
 esp_mqtt_client_handle_t mqtt_client;
@@ -466,7 +469,7 @@ void mesh_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id
 void ip_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     ip_event_got_ip_t *ip_event = (ip_event_got_ip_t *) event_data;
-    ESP_LOGI(MESH_TAG, "IP: Got new ip: " IPSTR, IP2STR(&ip_event->ip_info.ip));
+    ESP_LOGI(MESH_TAG, "<IP_EVENT_STA_GOT_IP>IP:" IPSTR, IP2STR(&ip_event->ip_info.ip));
 }
 
 static void provisioning_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
@@ -482,6 +485,7 @@ static void provisioning_event_handler(void* arg, esp_event_base_t event_base, i
             ESP_LOGI(PROV_TAG, "Received Wi-Fi credentials""\n\tSSID     : %s\n\tPassword : %s",provisioning_ssid,provisioning_password);
 			strcpy(router_ssid, provisioning_ssid);
 			strcpy(router_password, provisioning_password);  
+			provisioning_recieved = true;
         }
 		break;
         case WIFI_PROV_CRED_FAIL: 
@@ -541,6 +545,17 @@ static void get_device_service_name(char *service_name, size_t print_size)
     snprintf(service_name, print_size, "%s%02X%02X%02X", ssid_prefix, eth_mac[3], eth_mac[4], eth_mac[5]);
 }
 
+static void oneshot_timer_callback(void* arg)
+{
+	if (!provisioning_recieved)
+	{
+		wifi_prov_mgr_stop_provisioning();
+		strcpy(router_ssid, "NO_ROUTER");
+		strcpy(router_password, "NO_PASSWORD");  
+		printf("Provisioning skipped\n");
+	}
+}
+
 void app_main(void)
 {
     esp_err_t ret = nvs_flash_init();
@@ -580,7 +595,15 @@ void app_main(void)
     const char *provisioning_service_key = NULL;
     uint8_t provisioning_service_uuid[] = {0xb4, 0xdf, 0x5a, 0x1c, 0x3f, 0x6b, 0xf4, 0xbf,0xea, 0x4a, 0x82, 0x03, 0x04, 0x90, 0x1a, 0x02,};
     wifi_prov_scheme_ble_set_service_uuid(provisioning_service_uuid);
-    ESP_ERROR_CHECK(wifi_prov_mgr_start_provisioning(provisioning_security, provisioning_pop, provisioning_service_name, provisioning_service_key));
+    ESP_ERROR_CHECK(wifi_prov_mgr_start_provisioning(provisioning_security, provisioning_pop, provisioning_service_name, provisioning_service_key));	
+	const esp_timer_create_args_t oneshot_timer_args = 
+	{
+            .callback = &oneshot_timer_callback,
+            .name = "one-shot"
+    };
+    esp_timer_handle_t oneshot_timer;
+    ESP_ERROR_CHECK(esp_timer_create(&oneshot_timer_args, &oneshot_timer));
+	ESP_ERROR_CHECK(esp_timer_start_once(oneshot_timer, 35000000));	
 	xEventGroupWaitBits(is_provisioning_finished, PROVISIONING_BIT, false, true, portMAX_DELAY);
 	esp_wifi_stop();
 	esp_wifi_deinit();
