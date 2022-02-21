@@ -15,7 +15,7 @@ extern bool provisioning_recieved;
 extern esp_netif_t *provisioning_netif;
 extern int PROVISIONING_BIT;
 extern EventGroupHandle_t is_provisioning_finished;
-
+extern int recieve_delay;
 
 void init_memory();
 esp_mqtt_client_handle_t init_mqtt(char *url);
@@ -29,3 +29,4 @@ void restart_wifi(wifi_init_config_t config);
 void aditional_init();
 void oneshot_timer_callback(void* arg);
 void send_own_data();
+int get_base_recieve_delay();

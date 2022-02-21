@@ -27,6 +27,7 @@ char router_password[20];
 bool provisioning_recieved;
 esp_netif_t *provisioning_netif;
 int PROVISIONING_BIT;
+int recieve_delay;
 
 void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data)
 {
@@ -77,12 +78,16 @@ void mesh_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id
 		{
 			mesh_event_routing_table_change_t *mesh_routing_table = (mesh_event_routing_table_change_t *)event_data;
 			ESP_LOGW(MESH_TAG, "MESH: Routing table changed: %d to: %d, layer:%d", mesh_routing_table->rt_size_change, mesh_routing_table->rt_size_new, mesh_layer);
+			recieve_delay = get_base_recieve_delay()/(mesh_routing_table->rt_size_new);
+			ESP_LOGW(MESH_TAG, "MESH: Recieve delay changed to: %d", recieve_delay);
 		}
 		break;
 		case MESH_EVENT_ROUTING_TABLE_REMOVE: 
 		{
 			mesh_event_routing_table_change_t *mesh_routing_table = (mesh_event_routing_table_change_t *)event_data;
 			ESP_LOGW(MESH_TAG, "MESH: Routing table removed: %d, layer:%d", mesh_routing_table->rt_size_change, mesh_layer);
+			recieve_delay = get_base_recieve_delay()/(mesh_routing_table->rt_size_new);
+			ESP_LOGW(MESH_TAG, "MESH: Recieve delay changed to: %d", recieve_delay);
 		}
 		break;
 		case MESH_EVENT_NO_PARENT_FOUND: 

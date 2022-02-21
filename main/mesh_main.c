@@ -42,6 +42,7 @@ esp_mqtt_client_handle_t mqtt_client;
 char hum_topic[39];
 char temp_topic[42];
 char from_mac_string[18];
+int recieve_delay = SEND_DELAY_MS;
 
 void sensor_read(void *arg)
 {
@@ -58,6 +59,11 @@ void sensor_read(void *arg)
 		vTaskDelay((SENSOR_DELAY_MS-2000) / portTICK_RATE_MS);
 	}
 	vTaskDelete(NULL);
+}
+
+int get_base_recieve_delay()
+{
+	return SEND_DELAY_MS;
 }
  
 void mesh_send(void *arg)
@@ -121,6 +127,7 @@ void mesh_recieve(void *arg)
 			mqtt_id = esp_mqtt_client_publish(mqtt_client, hum_topic,itoa(recv_hum,buffer,10), 0, 1, 0);
 			printf("MQTT: Publishing successful, message id = %d\n", mqtt_id);
 		}
+		vTaskDelay((recieve_delay-5) / portTICK_RATE_MS);
     }
     vTaskDelete(NULL);
 }
