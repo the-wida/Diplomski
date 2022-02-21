@@ -111,7 +111,7 @@ void mesh_recieve(void *arg)
 		printf("Humidity: %d, Temperature: %d\n",recv_hum, recv_temp);
 		if (esp_mesh_is_root())
 		{
-			printf("Sending root data\n"); 
+			printf("Sending child data\n"); 
 			mqtt_id = esp_mqtt_client_subscribe(mqtt_client, temp_topic, 1);
 			printf("MQTT: Subscription successful, message id = %d\n", mqtt_id);
 			mqtt_id = esp_mqtt_client_publish(mqtt_client, temp_topic, itoa(recv_temp,buffer,10), 0, 1, 0);
