@@ -9,6 +9,9 @@
 #include <wifi_provisioning/manager.h>
 #include <wifi_provisioning/scheme_ble.h>
 #include <freertos/event_groups.h>
+#include "driver/gpio.h"
+
+#define YELLOW 26
 
 const char *IP_TAG = "ip_main";
 const char *MESH_TAG = "mesh_main";
@@ -102,14 +105,14 @@ void mesh_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id
 			esp_mesh_get_id(&mesh_id);
 			mesh_layer = mesh_parent_connected->self_layer;
 			memcpy(&mesh_parent_addr.addr, mesh_parent_connected->connected.bssid, 6);
-			static char mesh_is_root_string[24] ="";
+			static char mesh_is_root_string[25] ="";
 			if (esp_mesh_is_root())
 			{
 				strcpy(mesh_is_root_string, "This node is the root");
 			}
-			else if (mesh_layer == 2)
+			else 
 			{
-				strcpy(mesh_is_root_string, "This node is on layer 2");
+				snprintf(mesh_is_root_string,25,"This node is on layer %d", mesh_layer);
 			}
 			ESP_LOGI(MESH_TAG, "MESH: Parent connected, layer change: %d->%d, parent: "MACSTR"", mesh_last_layer, mesh_layer, MAC2STR(mesh_parent_addr.addr));
 			ESP_LOGI(NO_TAG, "%s MESH id: "MACSTR", parent duty:%d", mesh_is_root_string, MAC2STR(mesh_id.addr), mesh_parent_connected->duty);
@@ -121,6 +124,7 @@ void mesh_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id
 				esp_mqtt_client_start(mqtt_client);
 				xTaskCreate(mesh_recieve, "MPRX", 3072, NULL, 5, NULL);
 				xTaskCreate(send_own_data, "SROOT", 3072, NULL, 5, NULL);
+				gpio_set_level(YELLOW, 1);
 				break;
 			}
 			xTaskCreate(mesh_send, "MPTX", 3072, NULL, 5, NULL);
@@ -137,14 +141,14 @@ void mesh_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id
 		{
 			mesh_event_layer_change_t *mesh_layer_change = (mesh_event_layer_change_t *)event_data;
 			mesh_layer = mesh_layer_change->new_layer;
-			static char mesh_layer_string[24] ="";
+			static char mesh_layer_string[25] ="";
 			if (esp_mesh_is_root())
 			{
 				strcpy(mesh_layer_string, "This node is the root");
 			}
-			else if (mesh_layer == 2)
+			else 
 			{
-				strcpy(mesh_layer_string, "This node is on layer 2");
+				snprintf(mesh_layer_string,25,"This node is on layer %d", mesh_layer);
 			}
 			ESP_LOGI(MESH_TAG, "MESH: Layer change: %d->%d %s",mesh_last_layer, mesh_layer, mesh_layer_string);
 			mesh_last_layer = mesh_layer;
@@ -240,6 +244,7 @@ void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event
 		case MQTT_EVENT_CONNECTED:
 		{
 			ESP_LOGI(MQTT_TAG, "MQTT: Client connected to broker");
+			gpio_set_level(YELLOW, 0);
 		}
 		break;
 		case MQTT_EVENT_DISCONNECTED:
