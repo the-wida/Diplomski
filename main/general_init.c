@@ -104,8 +104,8 @@ void oneshot_timer_callback(void* arg)
 	if (!provisioning_recieved)
 	{
 		wifi_prov_mgr_stop_provisioning();
-		strcpy(router_ssid, "vidakovic");
-		strcpy(router_password, "16071943");  
+		strcpy(router_ssid, "NO_ROUTER");
+		strcpy(router_password, "NO_PASSWORD");  
 		printf("Provisioning skipped\n");
 	}
 }
@@ -119,7 +119,7 @@ void start_timer()
     };
     esp_timer_handle_t oneshot_timer;
     ESP_ERROR_CHECK(esp_timer_create(&oneshot_timer_args, &oneshot_timer));
-	ESP_ERROR_CHECK(esp_timer_start_once(oneshot_timer,10 /*35000000*/));	
+	ESP_ERROR_CHECK(esp_timer_start_once(oneshot_timer,35000000));	
 }
 
 void restart_wifi(wifi_init_config_t config)
